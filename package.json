@@ -1,7 +1,7 @@
 {
   "name": "readcommand",
   "description": "An extension to readline that reads and parses a multi-line shell command",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://github.com/mrvisser/node-readcommand",
   "author": {
     "name": "Branden Visser",
