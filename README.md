@@ -10,8 +10,6 @@ A utility that wraps the built-in `readline` utility in order to read and parse 
 * Command navigation using `up` and `down` arrow keys
 * Auto-complete hook for `readline` autocomplete
 
-TODO: Expose auto-complete functionality
-
 ## Example
 
 ### Read a single command
