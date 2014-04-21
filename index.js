@@ -195,6 +195,16 @@ function _resetReadLine(state) {
         }
     });
 
+    /*!
+     * Monkey-patch the setPrompt method to properly calculate the string length when colors are used. :(
+     * http://stackoverflow.com/questions/12075396/adding-colors-to-terminal-prompt-results-in-large-white-space
+     */
+    var rl = state.rl;
+    rl._setPrompt = rl.setPrompt;
+    rl.setPrompt = function(prompt, length) {
+        rl._setPrompt(prompt, (length) ? length : prompt.split(/[\r\n]/).pop().stripColors.length);
+    };
+
     _bindSigint(state);
 }
 
