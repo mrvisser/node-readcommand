@@ -1,13 +1,14 @@
 
 ## ReadCommand
 
-A utility that wraps the built-in `readline` utility in order to read and parse multi-line commands.
+A utility that wraps the built-in `readline` utility in order to read and parse multi-line commands. This module was extracted from work that was bloating in [node-corporal](https://github.com/mrvisser/node-corporal), an interactive shell command-line utility.
 
 ## Features
 
 * Argument parsing from the user's input
 * Multi-line command input
 * Command navigation using `up` and `down` arrow keys
+* Auto-complete hook for `readline` autocomplete
 
 TODO: Expose auto-complete functionality
 
