@@ -51,6 +51,7 @@ readcommand.loop(null, function(err, args, str, next) {
     console.log('Received args: %s', JSON.stringify(args));
     return next();
 });
+```
 
 ## License
 
