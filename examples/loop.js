@@ -18,6 +18,7 @@ readcommand.loop(null, function(err, args, str, next) {
         sigints = 0;
     }
 
-    console.log('Received args: %s', JSON.stringify(args));
+    console.log('args: %s', JSON.stringify(args));
+    console.log('str: %s', JSON.stringify(str));
     return next();
 });

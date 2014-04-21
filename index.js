@@ -15,6 +15,12 @@ var CommandParser = require('./lib/parser');
  *                                                      each command iteration
  * @param  {Function}   [options.ps2="> "]              A function to retrieve the ps2 prompt on
  *                                                      each command iteration
+ * @param  {Function}   [options.autocomplete]          The autocomplete function to use
+ * @param  {Readline}   [options.autocomplete.rl]       The readline instance
+ * @param  {String}     [options.autocomplete.line]     The line that is being autocompleted, as per
+ *                                                      `readline` docs for `completer`
+ * @param  {Function}   [options.autocomplete.callback] Invoke with autocomplete results, as per
+ *                                                      `readline` docs for `completer`
  * @param  {Function}   onCommand                       Invoked each time the user has input a
  *                                                      command
  * @param  {Error}      onCommand.err                   An error occurred receiving the command, if
@@ -50,6 +56,12 @@ var loop = module.exports.loop = function(options, onCommand) {
  *                                                      the command
  * @param  {String[]}   [options.history=[]]            The command history to use for toggling
  *                                                      command output with up and down
+ * @param  {Function}   [options.autocomplete]          The autocomplete function to use
+ * @param  {Readline}   [options.autocomplete.rl]       The readline instance
+ * @param  {String}     [options.autocomplete.line]     The line that is being autocompleted, as per
+ *                                                      `readline` docs for `completer`
+ * @param  {Function}   [options.autocomplete.callback] Invoke with autocomplete results, as per
+ *                                                      `readline` docs for `completer`
  * @param  {Function}   callback                        Invoked when a command has been read by the
  *                                                      user
  * @param  {Error}      callback.err                    An error that occurred, if any
@@ -74,6 +86,7 @@ var read = module.exports.read = function(options, callback) {
         'ps1': options.ps1,
         'ps2': options.ps2,
         'history': new CommandHistory(options.history),
+        'autocomplete': options.autocomplete,
         'callback': callback,
 
         'currentCommand': '',
@@ -164,7 +177,22 @@ function _resetReadLine(state) {
 
     state.rl = readline.createInterface({
         'input': state.input,
-        'output': state.output
+        'output': state.output,
+        'completer': function(line, callback) {
+            if (!_.isFunction(state.autocomplete)) {
+                // No autocompelte was provided, do nothing
+                return callback(null, [[], line]);
+            } else if (!state.onFirstLine) {
+                // We're not at the first line, don't complete anything
+                return callback(null, [[], line]);
+            }
+
+            // Good to go, pass to the implementer
+            return state.autocomplete(state.rl, line, function(err, dumbArray) {
+                dumbArray = dumbArray || [[], line];
+                return callback(err, dumbArray);
+            });
+        }
     });
 
     _bindSigint(state);
