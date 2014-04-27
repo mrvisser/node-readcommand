@@ -94,12 +94,11 @@ var read = module.exports.read = function(options, callback) {
         'onFirstLine': true
     };
 
-    // Create the readline instance and set it up for
-    // cool things!
+    // Create the readline instance and set it up for cool things!
     _resetReadLine(state);
 
-    // This isn't done in _resetReadLineAndRead because it binds
-    // to the input, not the readline instance
+    // This isn't done in _resetReadLineAndRead because it binds to the input, not the readline
+    // instance
     _bindKeypress(state);
 
     return _read(state);
@@ -118,7 +117,7 @@ function _loop(options, onCommand, _history) {
     });
 
     read(readOptions, function(err, args, str) {
-        // Put the string in the history but only if it is something
+        // If the user entered an actual command, put the string in the command history
         if (str) {
             _history.push(str);
         }
@@ -144,13 +143,11 @@ function _read(state) {
         // Parse the current full command
         var result = CommandParser.parse(commandToParse);
         if (result.closed) {
-            // The multi-line command is completed. Send
-            // the result to the caller
+            // The multi-line command is completed. Send the result to the caller
             return _sendResult(state, null, result.args, result.str);
         } else {
-            // We didn't close out the command. We should use the processed string that
-            // the command parser wants us to continue with, so append that to the
-            // parser
+            // We didn't close out the command. We should use the processed string that the command
+            // parser wants us to continue with, so append that to the parser
             state.currentCommand = result.str;
 
             // Read a second line of input
@@ -159,8 +156,7 @@ function _read(state) {
         }
     });
 
-    // If we started with a line, clear it so subsequent
-    // reads to start with this
+    // If we started with a line, clear it so subsequent reads don't start with this
     if (state.currentLine) {
         state.rl.write(state.currentLine);
         state.currentLine = '';
@@ -196,7 +192,9 @@ function _resetReadLine(state) {
     });
 
     /*!
-     * Monkey-patch the setPrompt method to properly calculate the string length when colors are used. :(
+     * Monkey-patch the setPrompt method to properly calculate the string length when colors are
+     * used. :(
+     *
      * http://stackoverflow.com/questions/12075396/adding-colors-to-terminal-prompt-results-in-large-white-space
      */
     var rl = state.rl;
@@ -209,8 +207,8 @@ function _resetReadLine(state) {
 }
 
 /*!
- * Bind the SIGINT handling to the readline instance, which effectively returns
- * with an empty command.
+ * Bind the SIGINT handling to the readline instance, which effectively returns with an empty
+ * command.
  */
 function _bindSigint(state) {
     state.rl.once('SIGINT', function() {
@@ -221,14 +219,12 @@ function _bindSigint(state) {
 }
 
 /*!
- * Bind the keypress handling to the input stream to handle navigating command
- * history
+ * Bind the keypress handling to the input stream to handle navigating command history
  */
 function _bindKeypress(state) {
     state.onKeypress = function(ch, key) {
         if (!key || !state.onFirstLine) {
-            // Ignore the up/down history searcing when we've
-            // extended to a new line
+            // Ignore the up/down history searcing when we've extended to a new line
             return;
         }
 
@@ -240,8 +236,8 @@ function _bindKeypress(state) {
         }
 
         if (_.isString(replace)) {
-            // This will close the current prompt, so we can
-            // safely get a new one by re-invoking `_read`
+            // This will close the current prompt, so we can safely get a new one by re-invoking
+            // `_read`
             _resetReadLine(state);
             state.currentLine = replace;
             return _read(state);
@@ -259,15 +255,13 @@ function _unbindKeypress(state) {
 }
 
 /*!
- * Send the arguments result to the caller and clean up
- * after ourselves
+ * Send the arguments result to the caller and clean up after ourselves
  */
 function _sendResult(state, err, args, str) {
     _unbindKeypress(state);
     state.rl.close();
 
-    // At this point, we should be able to parse a closed command. If not,
-    // something is not right
+    // At this point, we should be able to parse a closed command. If not, something is not right
     return state.callback(err, args, str);
 }
 
@@ -293,9 +287,8 @@ function _psToFunction(ps) {
 }
 
 /*!
- * Convenience method to determine if the provided keypress key is
- * a verbatim key. Returns false if it's not the specified key name
- * or it has been executed with shift, ctrl or a meta key
+ * Convenience method to determine if the provided keypress key is a verbatim key. Returns false if
+ * it's not the specified key name or it has been executed with shift, ctrl or a meta key
  */
 function _keyIs(key, name) {
     return (key.name === name && !key.ctrl && !key.shift && !key.meta);
