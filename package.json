@@ -3,6 +3,14 @@
   "description": "An extension to readline that reads and parses a multi-line shell command",
   "version": "0.0.4",
   "homepage": "https://github.com/mrvisser/node-readcommand",
+  "keywords": [
+    "arguments",
+    "argv",
+    "command",
+    "commands",
+    "parse",
+    "shell"
+  ],
   "author": {
     "name": "Branden Visser",
     "email": "mrvisser@gmail.com"
