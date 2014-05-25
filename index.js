@@ -18,11 +18,11 @@ var CommandParser = require('./lib/parser');
  * @param  {Function}   [options.ps2="> "]              A function to retrieve the ps2 prompt on
  *                                                      each command iteration
  * @param  {Function}   [options.autocomplete]          The autocomplete function to use
- * @param  {Readline}   [options.autocomplete.rl]       The readline instance
  * @param  {String[]}   [options.autocomplete.args]     The args that are being autocompleted,
  *                                                      similar to `readline` docs for `completer`
- * @param  {Function}   [options.autocomplete.callback] Invoke with autocomplete results, as per
- *                                                      `readline` docs for `completer`
+ * @param  {Function}   [options.autocomplete.callback] Invoke with an `err` parameter (if any)
+ *                                                      followed by an array of potential
+ *                                                      replacements (if any)
  * @param  {Function}   onCommand                       Invoked each time the user has input a
  *                                                      command
  * @param  {Error}      onCommand.err                   An error occurred receiving the command, if
@@ -59,11 +59,11 @@ var loop = module.exports.loop = function(options, onCommand) {
  * @param  {String[]}   [options.history=[]]            The command history to use for toggling
  *                                                      command output with up and down
  * @param  {Function}   [options.autocomplete]          The autocomplete function to use
- * @param  {Readline}   [options.autocomplete.rl]       The readline instance
  * @param  {String[]}   [options.autocomplete.args]     The args that are being autocompleted,
  *                                                      similar to `readline` docs for `completer`
- * @param  {Function}   [options.autocomplete.callback] Invoke with autocomplete results, as per
- *                                                      `readline` docs for `completer`
+ * @param  {Function}   [options.autocomplete.callback] Invoke with an `err` parameter (if any)
+ *                                                      followed by an array of potential
+ *                                                      replacements (if any)
  * @param  {Function}   callback                        Invoked when a command has been read by the
  *                                                      user
  * @param  {Error}      callback.err                    An error that occurred, if any
@@ -189,12 +189,12 @@ function _resetReadLine(state) {
                     return callback(null, [[], line]);
                 }
 
-                state.autocomplete(state.rl, args, function(err, replacementsArray) {
+                state.autocomplete(args, function(err, replacements) {
                     if (err) {
                         return callback(err);
                     }
 
-                    CommandAutocomplete.getAutocompleteReplacements(state.currentCommand, line, replacementsArray, function(replacements, toReplace) {
+                    CommandAutocomplete.getAutocompleteReplacements(state.currentCommand, line, replacements, function(replacements, toReplace) {
                         // Convert the arguments into what node-readline expects
                         return callback(null, [replacements, toReplace]);
                     });

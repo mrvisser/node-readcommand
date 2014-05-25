@@ -379,7 +379,7 @@ describe('Auto-complete', function() {
         it('replaces single line command at very start of line', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements(null, 'my', ['mycommandisbad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], 'mycommandisbad');
+                assert.strictEqual(replacements[0], 'mycommandisbad ');
                 assert.strictEqual(toReplace, 'my');
                 return callback();
             });
@@ -388,7 +388,7 @@ describe('Auto-complete', function() {
         it('replaces single line command without quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements(null, 'my command is good', ['bad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(replacements[0], 'bad ');
                 assert.strictEqual(toReplace, 'good');
                 return callback();
             });
@@ -397,7 +397,7 @@ describe('Auto-complete', function() {
         it('replaces single line command with double-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements(null, 'my command is "good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(replacements[0], '"good no" ');
                 assert.strictEqual(toReplace, '"good yes');
                 return callback();
             });
@@ -406,7 +406,7 @@ describe('Auto-complete', function() {
         it('replaces single line command with single-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements(null, 'my command is \'good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(replacements[0], '\'good no\' ');
                 assert.strictEqual(toReplace, '\'good yes');
                 return callback();
             });
@@ -415,7 +415,7 @@ describe('Auto-complete', function() {
         it('replaces escaped multi-line command without quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command i\\\n', 's good', ['bad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(replacements[0], 'bad ');
                 assert.strictEqual(toReplace, 'good');
                 return callback();
             });
@@ -424,7 +424,7 @@ describe('Auto-complete', function() {
         it('replaces escaped multi-line commands with double-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command i\\\n', 's "good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(replacements[0], '"good no" ');
                 assert.strictEqual(toReplace, '"good yes');
                 return callback();
             });
@@ -433,7 +433,7 @@ describe('Auto-complete', function() {
         it('replaces escaped multi-line commands with single-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command i\\\n', 's \'good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(replacements[0], '\'good no\' ');
                 assert.strictEqual(toReplace, '\'good yes');
                 return callback();
             });
@@ -442,7 +442,7 @@ describe('Auto-complete', function() {
         it('replaces double-quoted multi-line command without quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command "i\n', 's" good', ['bad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(replacements[0], 'bad ');
                 assert.strictEqual(toReplace, 'good');
                 return callback();
             });
@@ -451,7 +451,7 @@ describe('Auto-complete', function() {
         it('replaces double-quoted multi-line commands with double-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command "i\n', 's" "good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(replacements[0], '"good no" ');
                 assert.strictEqual(toReplace, '"good yes');
                 return callback();
             });
@@ -460,7 +460,7 @@ describe('Auto-complete', function() {
         it('replaces double-quoted multi-line commands with single-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command "i\n', 's" \'good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(replacements[0], '\'good no\' ');
                 assert.strictEqual(toReplace, '\'good yes');
                 return callback();
             });
@@ -469,7 +469,7 @@ describe('Auto-complete', function() {
         it('replaces single-quoted multi-line command without quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command \'i\n', 's\' good', ['bad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(replacements[0], 'bad ');
                 assert.strictEqual(toReplace, 'good');
                 return callback();
             });
@@ -478,7 +478,7 @@ describe('Auto-complete', function() {
         it('replaces single-quoted multi-line commands with double-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command \'i\n', 's\' "good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(replacements[0], '"good no" ');
                 assert.strictEqual(toReplace, '"good yes');
                 return callback();
             });
@@ -487,7 +487,7 @@ describe('Auto-complete', function() {
         it('replaces single-quoted multi-line commands with single-quotes', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command \'i\n', 's\' \'good yes', ['good no'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(replacements[0], '\'good no\' ');
                 assert.strictEqual(toReplace, '\'good yes');
                 return callback();
             });
@@ -496,7 +496,7 @@ describe('Auto-complete', function() {
         it('replaces multi-line command at very start of line', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements('my command \\\n', 'is', ['isbad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], 'isbad');
+                assert.strictEqual(replacements[0], 'isbad ');
                 assert.strictEqual(toReplace, 'is');
                 return callback();
             });
@@ -505,7 +505,7 @@ describe('Auto-complete', function() {
         it('quotes replacements that contain spaces', function(callback) {
             CommandAutocomplete.getAutocompleteReplacements(null, 'my', ['command is bad'], function(replacements, toReplace) {
                 assert.strictEqual(replacements.length, 1);
-                assert.strictEqual(replacements[0], '"command is bad"');
+                assert.strictEqual(replacements[0], '"command is bad" ');
                 assert.strictEqual(toReplace, 'my');
                 return callback();
             });
