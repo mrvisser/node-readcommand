@@ -25,7 +25,7 @@
   },
   "main": "./index.js",
   "dependencies": {
-    "underscore": "latest"
+    "underscore": "1.6.x"
   },
   "devDependencies": {
     "grunt": "latest",
