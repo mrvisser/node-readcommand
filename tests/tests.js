@@ -259,6 +259,17 @@ describe('Auto-complete', function() {
             });
         });
 
+        it('does not abort when empty argument spans to second line with escape sequence', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('my args \\\n', '', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'args');
+                assert.strictEqual(args[2], '');
+                return callback();
+            });
+        });
+
         it('provides unquoted arguments', function(callback) {
             CommandAutocomplete.getAutocompleteArguments(null, 'my commands are', function(abort, args) {
                 assert.ok(!abort);
