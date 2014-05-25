@@ -3,6 +3,7 @@ var _ = require('underscore');
 var readline = require('readline');
 var util = require('util');
 
+var CommandAutocomplete = require('./lib/autocomplete');
 var CommandHistory = require('./lib/history');
 var CommandParser = require('./lib/parser');
 
@@ -183,66 +184,21 @@ function _resetReadLine(state) {
                 return callback(null, [[], line]);
             }
 
-            var doAutocomplete = false;
-
-            /*!
-             * Parse the full command to see if we are in a state where we can reasonably do an
-             * auto-complete
-             */
-            var fullCommandStr = state.currentCommand + line;
-            var fullCommandParsed = CommandParser.parse(fullCommandStr);
-
-            // The last argument of the current command string is the only thing that can be
-            // auto-completed
-            var lastArg = _.last(fullCommandParsed.args);
-
-            // If the last argument does not have an index, it means it's a cliff hanger (e.g., a
-            // space at the end of the command string). Therefore, we'll assign it an index at the
-            // end of the input string
-            if (!_.isNumber(lastArg.i)) {
-                lastArg.i = fullCommandStr.length - 1;
-            }
-
-            if (fullCommandParsed.open === CommandParser.OPEN_ESCAPE) {
-                // We can't complete on an escape sequence, it doesn't really make sense I don't
-                // think
-                return callback(null, [[], line]);
-            } else if (fullCommandStr.slice(lastArg.i).indexOf('\n') !== -1) {
-                // We can't complete if the last argument spans a new line. This would imply we need
-                // to do a replacement on data that has already been accepted which is not possible
-                return callback(null, [[], line]);
-            }
-
-            // Hand just the string arguments (not parsed metadata) to the autocomplete caller
-            var simpleArgs = _.pluck(_getAutocompleteArguments(fullCommandParsed.args), 'str');
-            state.autocomplete(state.rl, simpleArgs, function(err, replacementsArray) {
-                if (err) {
-                    return callback(err);
-                } else if (_.isEmpty(replacementsArray)) {
-                    // No suggestions, just return empty
+            CommandAutocomplete.getAutocompleteArguments(state.currentCommand, line, function(abort, args) {
+                if (abort) {
                     return callback(null, [[], line]);
                 }
 
-                // The replacement string is always from where the last argument began on the
-                // current line until the end
-                var distanceIndex = _getDistanceFromLastNewline(fullCommandStr, lastArg.i);
-                var toReplaceStr = line.slice(distanceIndex);
-                console.log('');
-                console.log('full command: %s', JSON.stringify(fullCommandStr));
-                console.log('       index: %s', distanceIndex);
-                console.log('toReplaceStr: "%s"', toReplaceStr);
-
-                replacementsArray = _.map(replacementsArray, function(replacement) {
-                    if (lastArg.quoted) {
-                        // If the last argument was quoted, reconstruct the quotes around the potential
-                        // replacements
-                        return util.format('%s%s%s', lastArg.quoted, replacement, lastArg.quoted);
+                state.autocomplete(state.rl, args, function(err, replacementsArray) {
+                    if (err) {
+                        return callback(err);
                     }
 
-                    return replacement;
+                    CommandAutocomplete.getAutocompleteReplacements(state.currentCommand, line, replacementsArray, function(replacements, toReplace) {
+                        // Convert the arguments into what node-readline expects
+                        return callback(null, [replacements, toReplace]);
+                    });
                 });
-
-                return callback(null, [replacementsArray, toReplaceStr]);
             });
         }
     });
@@ -332,25 +288,6 @@ function _sendResult(state, err, args, str) {
 }
 
 /*!
- * When giving the args array to the caller, we need to indicate if the cursor position is beginning
- * a new argument, or if it is in progress on a current argument. The parser will strip that
- * information in its sanitized `str` representation of the arguments. For example:
- *
- *  `"--log-level"` will look example the same as `"--log-level "` (trailing space)
- *
- * ... but for doing auto-complete on either argument keys or argument values, it is an important
- * distinction to make. So if the state is the latter, we maintain the empty string at the end of
- * the args array. Other than that, this is the same as `_getFinalArguments`
- */
-function _getAutocompleteArguments(args) {
-    // The logic is the same as `_getFinalArguments`, however if the last argument is stripped, we
-    // ensure we still keep it
-    return _.filter(args, function(arg, i) {
-        return (i === (args.length - 1) || arg.quote || arg.str !== '');
-    });
-}
-
-/*!
  * Clean vestigial arguments out of the arguments array so that it may be sent to the caller
  * as a completed command
  */
@@ -361,20 +298,6 @@ function _getFinalArguments(args) {
         // it stripped
         return (arg.quote || arg.str !== '');
     });
-}
-
-/*!
- * Given a string that might contain new-lines, the number of characters `i` is away from the last
- * new-line in the string. If the string does not contain a new-line, the result is just `i`
- */
-function _getDistanceFromLastNewline(str, i) {
-    var distance = i;
-    var lastNewlineIndex = str.lastIndexOf('\n');
-    if (lastNewlineIndex !== -1) {
-        distance = (i - lastNewlineIndex - 1);
-    }
-
-    return distance;
 }
 
 /*!

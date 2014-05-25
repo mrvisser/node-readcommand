@@ -2,6 +2,7 @@
 var assert = require('assert');
 var readcommand = require('../index');
 
+var CommandAutocomplete = require('../lib/autocomplete');
 var InOut = require('./util/inout');
 
 describe('Read', function() {
@@ -216,5 +217,298 @@ describe('Loop', function() {
             }
         });
     });
+});
 
+describe('Auto-complete', function() {
+
+    describe('#getAutocompleteArguments', function() {
+
+        it('returns an empty args array with an empty string', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, null, function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 0);
+                return callback();
+            });
+        });
+
+        it('aborts when input string ends in an escape sequence', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, '\\', function(abort, args) {
+                assert.ok(abort);
+                return callback();
+            });
+        });
+
+        it('aborts when input string spans two lines due to escape sequence', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('my args\\\n', 'are', function(abort, args) {
+                assert.ok(abort);
+                return callback();
+            });
+        });
+
+        it('aborts when input string spans two lines due to double-quote', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('my "args\n', 'are', function(abort, args) {
+                assert.ok(abort);
+                return callback();
+            });
+        });
+
+        it('aborts when input string spans two lines due to single-quote', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('my \'args\n', 'are', function(abort, args) {
+                assert.ok(abort);
+                return callback();
+            });
+        });
+
+        it('provides unquoted arguments', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, 'my commands are', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'commands');
+                assert.strictEqual(args[2], 'are');
+                return callback();
+            });
+        });
+
+        it('provides double-quote arguments that are unclosed at the end', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, 'my commands "are so', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'commands');
+                assert.strictEqual(args[2], 'are so');
+                return callback();
+            });
+        });
+
+        it('provides single-quote arguments that are unclosed at the end', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, 'my commands \'are so', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'commands');
+                assert.strictEqual(args[2], 'are so');
+                return callback();
+            });
+        });
+
+        it('provides double-quote arguments that are closed at the end', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, 'my commands "are so"', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'commands');
+                assert.strictEqual(args[2], 'are so');
+                return callback();
+            });
+        });
+
+        it('provides single-quote arguments that are closed at the end', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, 'my commands \'are so\'', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'commands');
+                assert.strictEqual(args[2], 'are so');
+                return callback();
+            });
+        });
+
+        it('filters empty arguments except for the last one', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments(null, '  my  commands  are  ', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 4);
+                assert.strictEqual(args[0], 'my');
+                assert.strictEqual(args[1], 'commands');
+                assert.strictEqual(args[2], 'are');
+                assert.strictEqual(args[3], '');
+                return callback();
+            });
+        });
+
+        it('does not abort when final argument is fully in buffer due to escape sequence', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('first line wi\\\n', 'th args', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 4);
+                assert.strictEqual(args[0], 'first');
+                assert.strictEqual(args[1], 'line');
+                assert.strictEqual(args[2], 'with');
+                assert.strictEqual(args[3], 'args');
+                return callback();
+            });
+        });
+
+        it('does not abort when final argument is full in buffer due to double-quote', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('first line "wi\n', 'th" args', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 4);
+                assert.strictEqual(args[0], 'first');
+                assert.strictEqual(args[1], 'line');
+                assert.strictEqual(args[2], 'wi\nth');
+                assert.strictEqual(args[3], 'args');
+                return callback();
+            });
+        });
+
+        it('does not abort when final argument is full in buffer due to single-quote', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('first line \'wi\n', 'th\' args', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 4);
+                assert.strictEqual(args[0], 'first');
+                assert.strictEqual(args[1], 'line');
+                assert.strictEqual(args[2], 'wi\nth');
+                assert.strictEqual(args[3], 'args');
+                return callback();
+            });
+        });
+
+        it('does not abort when quoted arguments starts immediately on new line', function(callback) {
+            CommandAutocomplete.getAutocompleteArguments('first line \\\n', '"my argument"', function(abort, args) {
+                assert.ok(!abort);
+                assert.strictEqual(args.length, 3);
+                assert.strictEqual(args[0], 'first');
+                assert.strictEqual(args[1], 'line');
+                assert.strictEqual(args[2], 'my argument');
+                return callback();
+            });
+        });
+    });
+
+    describe('#getAutocompleteReplacements', function() {
+
+        it('replaces single line command at very start of line', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'my', ['mycommandisbad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], 'mycommandisbad');
+                assert.strictEqual(toReplace, 'my');
+                return callback();
+            });
+        });
+
+        it('replaces single line command without quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'my command is good', ['bad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(toReplace, 'good');
+                return callback();
+            });
+        });
+
+        it('replaces single line command with double-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'my command is "good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(toReplace, '"good yes');
+                return callback();
+            });
+        });
+
+        it('replaces single line command with single-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'my command is \'good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(toReplace, '\'good yes');
+                return callback();
+            });
+        });
+
+        it('replaces escaped multi-line command without quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command i\\\n', 's good', ['bad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(toReplace, 'good');
+                return callback();
+            });
+        });
+
+        it('replaces escaped multi-line commands with double-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command i\\\n', 's "good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(toReplace, '"good yes');
+                return callback();
+            });
+        });
+
+        it('replaces escaped multi-line commands with single-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command i\\\n', 's \'good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(toReplace, '\'good yes');
+                return callback();
+            });
+        });
+
+        it('replaces double-quoted multi-line command without quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command "i\n', 's" good', ['bad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(toReplace, 'good');
+                return callback();
+            });
+        });
+
+        it('replaces double-quoted multi-line commands with double-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command "i\n', 's" "good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(toReplace, '"good yes');
+                return callback();
+            });
+        });
+
+        it('replaces double-quoted multi-line commands with single-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command "i\n', 's" \'good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(toReplace, '\'good yes');
+                return callback();
+            });
+        });
+
+        it('replaces single-quoted multi-line command without quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command \'i\n', 's\' good', ['bad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], 'bad');
+                assert.strictEqual(toReplace, 'good');
+                return callback();
+            });
+        });
+
+        it('replaces single-quoted multi-line commands with double-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command \'i\n', 's\' "good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '"good no"');
+                assert.strictEqual(toReplace, '"good yes');
+                return callback();
+            });
+        });
+
+        it('replaces single-quoted multi-line commands with single-quotes', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command \'i\n', 's\' \'good yes', ['good no'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '\'good no\'');
+                assert.strictEqual(toReplace, '\'good yes');
+                return callback();
+            });
+        });
+
+        it('replaces multi-line command at very start of line', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('my command \\\n', 'is', ['isbad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], 'isbad');
+                assert.strictEqual(toReplace, 'is');
+                return callback();
+            });
+        });
+
+        it('quotes replacements that contain spaces', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'my', ['command is bad'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '"command is bad"');
+                assert.strictEqual(toReplace, 'my');
+                return callback();
+            });
+        });
+    });
 });
