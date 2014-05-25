@@ -1,16 +1,22 @@
 
+var _ = require('underscore');
 var readcommand = require('../index');
 
-readcommand.read({'autocomplete': _autocomplete}, function(err, args, str) {
-    console.log('args: %s', JSON.stringify(args));
-    console.log('str: %s', JSON.stringify(str));
+readcommand.loop({'autocomplete': _autocomplete}, function(err, args, str, next) {
+    if (err) {
+        return;
+    }
+
+    console.log('final: %s', JSON.stringify(args));
+    return next();
 });
 
-function _autocomplete(rl, line, callback) {
-    if ('good work!'.indexOf(line) === 0) {
-        return callback(null, [['good work!'], line]);
-    } else {
-        console.log('autocompleting: %s (type "goo" then TAB to get an autocomplete)', line);
-        return callback();
+function _autocomplete(rl, args, callback) {
+    if (_.last(args) === 'options') {
+        return callback(null, ['optionsfirst', 'optionssecond', 'optionsthird']);
+    } else if (_.last(args) === 'complete') {
+        return callback(null, ['completeiswhatidid']);
     }
+
+    return callback();
 }

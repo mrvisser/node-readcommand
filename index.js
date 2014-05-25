@@ -1,6 +1,7 @@
 
 var _ = require('underscore');
 var readline = require('readline');
+var util = require('util');
 
 var CommandHistory = require('./lib/history');
 var CommandParser = require('./lib/parser');
@@ -17,8 +18,8 @@ var CommandParser = require('./lib/parser');
  *                                                      each command iteration
  * @param  {Function}   [options.autocomplete]          The autocomplete function to use
  * @param  {Readline}   [options.autocomplete.rl]       The readline instance
- * @param  {String}     [options.autocomplete.line]     The line that is being autocompleted, as per
- *                                                      `readline` docs for `completer`
+ * @param  {String[]}   [options.autocomplete.args]     The args that are being autocompleted,
+ *                                                      similar to `readline` docs for `completer`
  * @param  {Function}   [options.autocomplete.callback] Invoke with autocomplete results, as per
  *                                                      `readline` docs for `completer`
  * @param  {Function}   onCommand                       Invoked each time the user has input a
@@ -58,8 +59,8 @@ var loop = module.exports.loop = function(options, onCommand) {
  *                                                      command output with up and down
  * @param  {Function}   [options.autocomplete]          The autocomplete function to use
  * @param  {Readline}   [options.autocomplete.rl]       The readline instance
- * @param  {String}     [options.autocomplete.line]     The line that is being autocompleted, as per
- *                                                      `readline` docs for `completer`
+ * @param  {String[]}   [options.autocomplete.args]     The args that are being autocompleted,
+ *                                                      similar to `readline` docs for `completer`
  * @param  {Function}   [options.autocomplete.callback] Invoke with autocomplete results, as per
  *                                                      `readline` docs for `completer`
  * @param  {Function}   callback                        Invoked when a command has been read by the
@@ -119,7 +120,7 @@ function _loop(options, onCommand, _history) {
     read(readOptions, function(err, args, str) {
         // If the user entered an actual command, put the string in the command history
         if (str) {
-            _history.push(str);
+            _history.push(str.split('\n').shift());
         }
 
         // Provide the args to the caller
@@ -142,21 +143,23 @@ function _read(state) {
 
         // Parse the current full command
         var result = CommandParser.parse(commandToParse);
-        if (result.closed) {
+        if (!result.open) {
             // The multi-line command is completed. Send the result to the caller
             return _sendResult(state, null, result.args, result.str);
-        } else {
-            // We didn't close out the command. We should use the processed string that the command
-            // parser wants us to continue with, so append that to the parser
-            state.currentCommand = result.str;
-
-            // Read a second line of input
-            state.onFirstLine = false;
-            return _read(state);
         }
+
+        // We didn't close out the command. We should use the processed string that the command
+        // parser wants us to continue with, so append that to the parser with the new-line the
+        // user input, as that will now be a part of the command string
+        state.currentCommand = result.str + '\n';
+
+        // Read a second line of input
+        state.onFirstLine = false;
+        return _read(state);
     });
 
-    // If we started with a line, clear it so subsequent reads don't start with this
+    // If we started with a line, clear it so subsequent reads don't start with this. `currentLine`
+    // is necessary for up-down history replacement
     if (state.currentLine) {
         state.rl.write(state.currentLine);
         state.currentLine = '';
@@ -176,17 +179,70 @@ function _resetReadLine(state) {
         'output': state.output,
         'completer': function(line, callback) {
             if (!_.isFunction(state.autocomplete)) {
-                // No autocompelte was provided, do nothing
-                return callback(null, [[], line]);
-            } else if (!state.onFirstLine) {
-                // We're not at the first line, don't complete anything
+                // No autocomplete was provided, do nothing
                 return callback(null, [[], line]);
             }
 
-            // Good to go, pass to the implementer
-            return state.autocomplete(state.rl, line, function(err, dumbArray) {
-                dumbArray = dumbArray || [[], line];
-                return callback(err, dumbArray);
+            var doAutocomplete = false;
+
+            /*!
+             * Parse the full command to see if we are in a state where we can reasonably do an
+             * auto-complete
+             */
+            var fullCommandStr = state.currentCommand + line;
+            var fullCommandParsed = CommandParser.parse(fullCommandStr);
+
+            // The last argument of the current command string is the only thing that can be
+            // auto-completed
+            var lastArg = _.last(fullCommandParsed.args);
+
+            // If the last argument does not have an index, it means it's a cliff hanger (e.g., a
+            // space at the end of the command string). Therefore, we'll assign it an index at the
+            // end of the input string
+            if (!_.isNumber(lastArg.i)) {
+                lastArg.i = fullCommandStr.length - 1;
+            }
+
+            if (fullCommandParsed.open === CommandParser.OPEN_ESCAPE) {
+                // We can't complete on an escape sequence, it doesn't really make sense I don't
+                // think
+                return callback(null, [[], line]);
+            } else if (fullCommandStr.slice(lastArg.i).indexOf('\n') !== -1) {
+                // We can't complete if the last argument spans a new line. This would imply we need
+                // to do a replacement on data that has already been accepted which is not possible
+                return callback(null, [[], line]);
+            }
+
+            // Hand just the string arguments (not parsed metadata) to the autocomplete caller
+            var simpleArgs = _.pluck(_getAutocompleteArguments(fullCommandParsed.args), 'str');
+            state.autocomplete(state.rl, simpleArgs, function(err, replacementsArray) {
+                if (err) {
+                    return callback(err);
+                } else if (_.isEmpty(replacementsArray)) {
+                    // No suggestions, just return empty
+                    return callback(null, [[], line]);
+                }
+
+                // The replacement string is always from where the last argument began on the
+                // current line until the end
+                var distanceIndex = _getDistanceFromLastNewline(fullCommandStr, lastArg.i);
+                var toReplaceStr = line.slice(distanceIndex);
+                console.log('');
+                console.log('full command: %s', JSON.stringify(fullCommandStr));
+                console.log('       index: %s', distanceIndex);
+                console.log('toReplaceStr: "%s"', toReplaceStr);
+
+                replacementsArray = _.map(replacementsArray, function(replacement) {
+                    if (lastArg.quoted) {
+                        // If the last argument was quoted, reconstruct the quotes around the potential
+                        // replacements
+                        return util.format('%s%s%s', lastArg.quoted, replacement, lastArg.quoted);
+                    }
+
+                    return replacement;
+                });
+
+                return callback(null, [replacementsArray, toReplaceStr]);
             });
         }
     });
@@ -200,7 +256,17 @@ function _resetReadLine(state) {
     var rl = state.rl;
     rl._setPrompt = rl.setPrompt;
     rl.setPrompt = function(prompt, length) {
-        rl._setPrompt(prompt, (length) ? length : prompt.split(/[\r\n]/).pop().stripColors.length);
+        var strippedLength = null;
+        if (length) {
+            strippedLength = length;
+        } else {
+            var stripped = prompt.split(/[\r\n]/).pop().stripColors;
+            if (stripped) {
+                strippedLength = stripped.length;
+            }
+        }
+
+        rl._setPrompt(prompt, strippedLength);
     };
 
     _bindSigint(state);
@@ -262,7 +328,53 @@ function _sendResult(state, err, args, str) {
     state.rl.close();
 
     // At this point, we should be able to parse a closed command. If not, something is not right
-    return state.callback(err, args, str);
+    return state.callback(err, _.pluck(_getFinalArguments(args), 'str'), str);
+}
+
+/*!
+ * When giving the args array to the caller, we need to indicate if the cursor position is beginning
+ * a new argument, or if it is in progress on a current argument. The parser will strip that
+ * information in its sanitized `str` representation of the arguments. For example:
+ *
+ *  `"--log-level"` will look example the same as `"--log-level "` (trailing space)
+ *
+ * ... but for doing auto-complete on either argument keys or argument values, it is an important
+ * distinction to make. So if the state is the latter, we maintain the empty string at the end of
+ * the args array. Other than that, this is the same as `_getFinalArguments`
+ */
+function _getAutocompleteArguments(args) {
+    // The logic is the same as `_getFinalArguments`, however if the last argument is stripped, we
+    // ensure we still keep it
+    return _.filter(args, function(arg, i) {
+        return (i === (args.length - 1) || arg.quote || arg.str !== '');
+    });
+}
+
+/*!
+ * Clean vestigial arguments out of the arguments array so that it may be sent to the caller
+ * as a completed command
+ */
+function _getFinalArguments(args) {
+    return _.filter(args, function(arg) {
+        // We filter out empty arguments, but only if they weren't explicitly specified with
+        // quotes. E.g., "--verbose ''" will retain the empty string, while "--verbose " will have
+        // it stripped
+        return (arg.quote || arg.str !== '');
+    });
+}
+
+/*!
+ * Given a string that might contain new-lines, the number of characters `i` is away from the last
+ * new-line in the string. If the string does not contain a new-line, the result is just `i`
+ */
+function _getDistanceFromLastNewline(str, i) {
+    var distance = i;
+    var lastNewlineIndex = str.lastIndexOf('\n');
+    if (lastNewlineIndex !== -1) {
+        distance = (i - lastNewlineIndex - 1);
+    }
+
+    return distance;
 }
 
 /*!
