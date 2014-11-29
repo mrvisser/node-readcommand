@@ -521,5 +521,41 @@ describe('Auto-complete', function() {
                 return callback();
             });
         });
+
+        it('appends replacements to the command string when command ends with single white-space', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'number ', ['123456789'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '123456789 ');
+                assert.strictEqual(toReplace, '');
+                return callback();
+            });
+        });
+
+        it('appends replacements to the command string when command ends with multiple white-space', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements(null, 'number    ', ['123456789'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '123456789 ');
+                assert.strictEqual(toReplace, '');
+                return callback();
+            });
+        });
+
+        it('appends replacements to the command string when command ends with all white-space then a new line', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('number \\\n', null, ['123456789'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '123456789 ');
+                assert.strictEqual(toReplace, '');
+                return callback();
+            });
+        });
+
+        it('appends replacements to the command string when command ends with all white-space then a new line and more white-space', function(callback) {
+            CommandAutocomplete.getAutocompleteReplacements('number \\\n', '  ', ['123456789'], function(replacements, toReplace) {
+                assert.strictEqual(replacements.length, 1);
+                assert.strictEqual(replacements[0], '123456789 ');
+                assert.strictEqual(toReplace, '');
+                return callback();
+            });
+        });
     });
 });
