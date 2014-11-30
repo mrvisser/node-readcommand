@@ -1,6 +1,8 @@
 
 ## ReadCommand
 
+[![Build Status](https://travis-ci.org/mrvisser/node-readcommand.png?branch=master)](https://travis-ci.org/mrvisser/node-readcommand)
+
 A utility that wraps the built-in `readline` utility in order to read and parse multi-line commands. This module was extracted from work that was bloating in [node-corporal](https://github.com/mrvisser/node-corporal), an interactive shell command-line utility.
 
 ## Features
