@@ -10,9 +10,9 @@ var CommandParser = require('./lib/parser');
 /**
  * Start a command prompt loop.
  *
- * @param  {Object}     [options]
+ * @param  {Object}     [options={}]                    Optional read arguments
  * @param  {Stream}     [options.input=process.stdin]   The input stream to read a command from
- * @param  {Stream}     [options.output=process.stdout] The output stream to display results to
+ * @param  {Stream}     [options.output=process.stdout] The output stream to display prompts to
  * @param  {Function}   [options.ps1="> "]              A function to retrieve the ps1 prompt on
  *                                                      each command iteration
  * @param  {Function}   [options.ps2="> "]              A function to retrieve the ps2 prompt on
@@ -37,6 +37,11 @@ var CommandParser = require('./lib/parser');
  *                                                      already cleaned up
  */
 var loop = module.exports.loop = function(options, onCommand) {
+    if (_.isFunction(options) && !onCommand) {
+        onCommand = options;
+        options = null;
+    }
+
     options = options || {};
     options.input = options.input || process.stdin;
     options.output = options.output || process.stdout;
@@ -49,9 +54,9 @@ var loop = module.exports.loop = function(options, onCommand) {
 /**
  * Read a single multi-line command from the user.
  *
- * @param  {Object}     [options]                       Optional read arguments
+ * @param  {Object}     [options={}]                    Optional read arguments
  * @param  {Stream}     [options.input=process.stdin]   The input stream to read a command from
- * @param  {Stream}     [options.output=process.stdout] The output stream to display results to
+ * @param  {Stream}     [options.output=process.stdout] The output stream to display prompts to
  * @param  {String}     [options.ps1="> "]              The PS1 prompt label for the first line of
  *                                                      the command
  * @param  {String}     [options.ps2="> "]              The PS2 prompt label for subsequent lines of
@@ -73,6 +78,11 @@ var loop = module.exports.loop = function(options, onCommand) {
  * @param  {String}     callback.str                    The raw input string from the user
  */
 var read = module.exports.read = function(options, callback) {
+    if (_.isFunction(options) && !callback) {
+        callback = options;
+        options = null;
+    }
+
     options = options || {};
     options.input = options.input || process.stdin;
     options.output = options.output || process.stdout;

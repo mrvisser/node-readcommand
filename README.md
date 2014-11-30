@@ -9,20 +9,54 @@ A utility that wraps the built-in node.js `readline` functionality to parse mult
 
 * Argument parsing from the user's input
 * Multi-line command input
-* Command navigation using `up` and `down` arrow keys
+* Command history navigation using `up` and `down` arrow keys
 * Auto-complete hook for argument auto-completion
 
-## Example
+## API
+
+* [readcommand.read(options, callback)](https://github.com/mrvisser/node-readcommand/blob/master/index.js#L49-L75)
+    * Read a single command from the user
+
+* [readcommand.loop(options, callback)](https://github.com/mrvisser/node-readcommand/blob/master/index.js#L10-L39)
+    * Read commands from the user in an interactive loop
+
+## Examples
 
 ### Read a single command
 
-This example reads a command and prints the parsed argument array. It is invoked with the history of commands: 1, 2, 3, 4 and 5 (5 being the newest), therefore using the up and down arrow keys will toggle through these items.
+This is the most simple example, reading a command from a user in your interactive shell, and parsing it into an arguments array like `process.argv`, then printing it to the console.
 
 ```javascript
-var readcommand = require('readcommand');
+require('readcommand').read(function(err, args) {
+    console.log('Arguments: %s', JSON.stringify(args))
+});
+```
 
-readcommand.read({'history': ['1', '2', '3', '4', '5']}, function(args) {
-    console.log('args: %s', JSON.stringify(args));
+Example usage:
+
+```
+$ node simple.js
+> mycommand --arg1 val1 --arg2 val2
+Arguments: ["mycommand","--arg1","val1","--arg2","val2"]
+```
+
+And multi-line goodness!
+
+```
+$ node simple.js
+> mycommand \
+>   --arg1 val1 \
+>   --arg2 val2
+Arguments: ["mycommand","--arg1","val1","--arg2","val2"]
+```
+
+### Read a single command with history
+
+Provide a history array for the user to toggle through using up/down keys.
+
+```javascript
+require('readcommand').read({'history': ['cd', 'ls', 'curl', 'ps -aux | grep node', 'netstat -r']}, function(err, args) {
+    console.log('Arguments: %s', JSON.stringify(args))
 });
 ```
 
@@ -35,7 +69,7 @@ var readcommand = require('readcommand');
 
 var sigints = 0;
 
-readcommand.loop(null, function(err, args, str, next) {
+readcommand.loop(function(err, args, str, next) {
     if (err && err.code !== 'SIGINT') {
         throw err;
     } else if (err) {
@@ -57,7 +91,7 @@ readcommand.loop(null, function(err, args, str, next) {
 
 ### Auto-complete
 
-The auto-complete functionality will take the current user input, parse it into arguments and then allow the caller to replace the final argument with something pre-determined (e.g., argument name, argument value, command name, etc...).
+The auto-complete functionality wraps `readline`'s autocomplete functionality, providing an API that works with high-level parsed argument replacement instead of low-level loose string replacement.
 
 The following example provides replacements for either argument keys or argument values depending on context:
 
