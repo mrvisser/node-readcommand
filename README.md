@@ -14,7 +14,7 @@ A utility that wraps the built-in node.js `readline` functionality to parse mult
 
 ## API
 
-* [readcommand.read(options, callback)](https://github.com/mrvisser/node-readcommand/blob/master/index.js#L49-L75)
+* [readcommand.read(options, callback)](https://github.com/mrvisser/node-readcommand/blob/master/index.js#L54-L80)
     * Read a single command from the user
 
 * [readcommand.loop(options, callback)](https://github.com/mrvisser/node-readcommand/blob/master/index.js#L10-L39)
