@@ -23,6 +23,8 @@ var CommandParser = require('./lib/parser');
  * @param  {Function}   [options.autocomplete.callback] Invoke with an `err` parameter (if any)
  *                                                      followed by an array of potential
  *                                                      replacements (if any)
+ * @param  {String[]}   [options.history=[]]            The command history to use for toggling
+ *                                                      command output with up and down
  * @param  {Function}   onCommand                       Invoked each time the user has input a
  *                                                      command
  * @param  {Error}      onCommand.err                   An error occurred receiving the command, if
@@ -43,7 +45,7 @@ var loop = module.exports.loop = function(options, onCommand) {
     options.ps1 = _psToFunction(options.ps1);
     options.ps2 = _psToFunction(options.ps2);
 
-    return _loop(options, onCommand);
+    return _loop(options, onCommand, options.history);
 };
 
 /**
