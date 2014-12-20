@@ -145,8 +145,7 @@ function _loop(options, onCommand, _history) {
 }
 
 /*!
- * Perform the heavy lifting for reading the first and subsequent
- * command lines
+ * Perform the heavy lifting for reading the first and subsequent command lines
  */
 function _read(state) {
     var ps = (state.onFirstLine) ? state.ps1 : state.ps2;
