@@ -10,7 +10,7 @@ branches:
         - master
 
 before_install:
-    - npm install -g grunt-cli
+    - npm install -g yarn
 
 script:
     - yarn test
